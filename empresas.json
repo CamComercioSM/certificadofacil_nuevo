@@ -1,0 +1,54 @@
+{
+  "RESPUESTA": "EXITO",
+  "MENSAJE": "",
+  "DATOS": {
+    "codigoerror": "0000",
+    "mensajeerror": "",
+    "total": 2,
+    "expedientes": [
+      {
+        "tipopersona": "Persona",
+        "matricula": "38266",
+        "proponente": "",
+        "nombre": "SERNA GOMEZ JESUS ANTONIO",
+        "idclase": "1",
+        "identificacion": "2525045",
+        "nit": "",
+        "organizacion": "01",
+        "categoria": "",
+        "estadomatricula": "MC",
+        "ultanorenovado": "2004",
+        "procesosentramite": "N",
+        "embargosentramite": "N",
+        "recursosentramite": "N",
+        "fechamatricula": "1995-06-08",
+        "fecharenovacion": "2004-01-16",
+        "municipiotextual": "SANTA MARTA",
+        "establecimientos": "[]",
+        "certificados": "[{\"tipocertificado\":\"CerMat\",\"descripcioncertificado\":\"Certificado de matr\\u00edcula mercantil\",\"servicio\":\"01010101\",\"valor\":\"5800\"},{\"tipocertificado\":\"CerLibRegMer\",\"descripcioncertificado\":\"Certificado de libros de comercio\",\"servicio\":\"01010104\",\"valor\":\"11600\"}]"
+      },
+      {
+        "tipopersona": "Persona",
+        "matricula": "129316",
+        "proponente": "",
+        "nombre": "POSADA DE CORREA MARIA ADELINA DEL NIÑO JESUS",
+        "idclase": "1",
+        "identificacion": "25254904",
+        "nit": "252549044",
+        "organizacion": "01",
+        "categoria": "",
+        "estadomatricula": "MC",
+        "ultanorenovado": "2011",
+        "procesosentramite": "N",
+        "embargosentramite": "N",
+        "recursosentramite": "N",
+        "fechamatricula": "2011-02-09",
+        "fecharenovacion": "2011-02-09",
+        "municipiotextual": "SANTA MARTA",
+        "establecimientos": "[]",
+        "certificados": "[{\"tipocertificado\":\"CerMat\",\"descripcioncertificado\":\"Certificado de matr\\u00edcula mercantil\",\"servicio\":\"01010101\",\"valor\":\"5800\"},{\"tipocertificado\":\"CerLibRegMer\",\"descripcioncertificado\":\"Certificado de libros de comercio\",\"servicio\":\"01010104\",\"valor\":\"11600\"}]"
+      }
+    ]
+  },
+  "ERROR": null
+}
