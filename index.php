@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ejemplo Wizard Mínimo</title>
+    <title>Certifacil</title>
 
     <!-- Iconos Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -45,13 +45,11 @@
                             <div class="mt-3">
                                 <label class="form-label">Camara de comercio</label>
                                 <select name="camara_comercio" id="camaraDeComercio" class="form-control required" required>
-                                    <option value="">Seleccione...</option>
                                 </select>
                             </div>
                             <div class="mt-3">
                                 <label class="form-label">Tipo de busqueda</label>
                                 <select name="criterio_busqueda" id="criterioDeBusqueda" class="form-control required" required>
-                                    <option value="">Seleccione...</option>
                                 </select>
                             </div>
                             <div class="mt-3">
