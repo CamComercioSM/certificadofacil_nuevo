@@ -1,0 +1,13 @@
+{
+    "RESPUESTA": "EXITO",
+    "MENSAJE": "",
+    "DATOS": {
+        "codigoerror": "0000",
+        "mensajeerror": "",
+        "idliquidacion": 2543742,
+        "numerorecuperacion": "9V0XTT",
+        "urlparapago": "https://siisantamarta.confecamaras.co/lanzarVirtual.php?_empresa=32&_opcion=pagoelectronico&_numrec=9V0XTT",
+        "valortotal": 5800
+    },
+    "ERROR": null
+}
