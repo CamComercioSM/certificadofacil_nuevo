@@ -727,7 +727,6 @@
             textoNumeroRecuperacion.textContent = numeroRecuperacionActual;
             inputEnlacePago.value = linkPagoActual;
 
-            // QR de ejemplo (puedes cambiar por tu propio servicio)
             const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' +
                 encodeURIComponent(linkPagoActual);
             qrPagoImg.src = qrUrl;

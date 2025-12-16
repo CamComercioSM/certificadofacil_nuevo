@@ -5,7 +5,7 @@ let criterio_busqueda = null;
 let palabra_clave = null;
 let numero_matricula = null;
 let razonsocial = null;
-let nit = null;
+let NIT = null;
 let certificadosDisponibles = null;
 let datosInicioDeTransaccion = null;
 let tiposBusqueda = [
@@ -65,24 +65,19 @@ selectCamaraComercio.addEventListener('change', function () {
         return;
     }
 
-    // 2. Obtener la cámara seleccionada
     const camara = listadoCamaras.DATOS.find(c => c.camaraID === camaraIDSeleccionada);
     if (!camara) return;
 
-    // 3. No redirigir si la cámara es 32
     if (camara.camaraID === 32) {
-        console.log("Esta cámara no redirige.");
         return;
     }
 
-    // 4. Validar que exista un enlace de redirección
     const enlace = camara.camaraUrlENLACE_VISTAPROPIA;
     if (!enlace) {
         console.warn("La cámara no tiene enlace configurado.");
         return;
     }
 
-    // 5. Redirigir
     window.open(enlace, "_blank");
 });
 
@@ -90,9 +85,8 @@ async function cargarInformacionCamarasAndTipoBusqueda() {
     const selectCamaraComercio = document.getElementById('camaraDeComercio');
     const selectTipoBusqueda = document.getElementById('criterioDeBusqueda');
     if (!selectTipoBusqueda || !selectCamaraComercio) return;
-    const res = await conectarseEndPoint('listadoCamaras');
+    const res = await conectarseEndPoint("listadoCamaras");
     const resp = res.DATOS || [];
-    //let resp = listadoCamaras.DATOS;
 
     resp.forEach(item => {
         const opt = document.createElement("option");
@@ -112,85 +106,103 @@ async function cargarInformacionCamarasAndTipoBusqueda() {
 }
 
 async function crearTarjetasDeEmpresasDisponibles() {
-    camara_comercio = document.getElementById('camaraDeComercio');
-    criterio_busqueda = document.getElementById('criterioDeBusqueda');
-    palabra_clave = document.getElementById('palabraClave');
+    const flag = document.getElementById('flagEmpresa');
+    if (flag) flag.value = '0';
+
+    camara_comercio = document.getElementById('camaraDeComercio')?.value;
+    criterio_busqueda = document.getElementById('criterioDeBusqueda')?.value;
+    palabra_clave = document.getElementById('palabraClave')?.value;
+
     const contenedor = document.getElementById('selectEmpresa');
+
+    if (!contenedor) return;
+
     if (!camara_comercio || !criterio_busqueda || !palabra_clave) {
-        document.getElementById('contenedorTarjetasEmpresas').innerHTML = '<p class="text-center">Por favor seleccione la cámara de comercio, el criterio de búsqueda e ingrese un valor para la búsqueda.</p>';
+        contenedor.innerHTML = '';
+        mostrarAlertaDePasoVacio(contenedor, 'Seleccione cámara, criterio e ingrese un valor para buscar.');
         return;
     }
-    mostrarModalDeCarga();
-    const res = await conectarseEndPoint('buscarTiposCertificados', { camara_comercio, criterio_busqueda, palabra_clave });
-    //const res = empresasBusqueda;
-    const resp = res.DATOS || [];
-    empresasBusqueda = resp.expedientes;
 
-    // Construimos "tabla" pero cada fila es una tarjeta
-    let html = `
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Tipo / Matrícula</th>
-                        <th>Razón social</th>
-                        <th>NIT / Num. ID</th>
-                        <th class="text-end">Actualizado el</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+    let hayempresas = false;
 
-    empresasBusqueda.forEach((emp, index) => {
-        const tipo = emp.tipopersona || "-";
-        const matricula = emp.matricula || "-";
-        const razonSocial = emp.nombre || "-";
-        const nit = emp.identificacion || "-";
-        const renovacion = emp.fecharenovacion || "-";
-
-        html += `
-            <tr class="empresa-card">
-                <td>
-                    <label class="option-card w-100 mb-0">
-                        <input 
-                            type="radio" 
-                            name="empresaSeleccionada" 
-                            id="empresa${index}" 
-                            value="${matricula}"
-                            data-index="${index}"
-                            data-require-if="flagEmpresa:0"
-                            onchange="selectEmpresa('${matricula}', this)"
-                        >
-                        <div class="d-flex flex-column">
-                            <span class="fw-semibold">${tipo}</span>
-                            <span class="text-muted small">Matrícula: ${matricula}</span>
-                        </div>
-                    </label>
-                </td>
-                <td>
-                    <div class="fw-semibold">${razonSocial}</div>
-                </td>
-                <td>
-                    <span class="text-black small">${nit}</span>
-                </td>
-                <td class="text-end">
-                    <div class="fw-semibold">${renovacion}</div>
-                </td>
-            </tr>
-        `;
+    const res = await conectarseEndPoint('buscarTiposCertificados', {
+        camara_comercio,
+        criterio_busqueda,
+        palabra_clave,
+        pagina: 1
     });
+    if (res.RESPUESTA !== 'EXITO') return;
+
+    // 2) Soporta ambas formas comunes de respuesta
+    const expedientes = res.DATOS.expedientes || [];
+    empresasBusqueda = expedientes;
+
+    let html = `
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Tipo / Matrícula</th>
+            <th>Razón social</th>
+            <th>NIT / Num. ID</th>
+            <th class="text-end">Actualizado el</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+    if (empresasBusqueda.length > 0) {
+        hayempresas = true;
+
+        empresasBusqueda.forEach((emp, index) => {
+            const tipo = emp?.tipopersona || "-";
+            const matricula = emp?.matricula || "-";
+            const razonSocial = emp?.nombre || "-";
+            const nit = emp?.identificacion || "-";
+            const renovacion = emp?.fecharenovacion || "-";
+
+            html += `
+        <tr class="empresa-card">
+          <td>
+            <label class="option-card w-100 mb-0">
+              <input 
+                type="radio"
+                name="empresaSeleccionada"
+                id="empresa${index}"
+                value="${matricula}"
+                data-index="${index}"
+                data-require-if="flagEmpresa:0"
+                onchange="selectEmpresa('${matricula}', this)"
+              >
+              <div class="d-flex flex-column">
+                <span class="fw-semibold">${tipo}</span>
+                <span class="text-muted small">Matrícula: ${matricula}</span>
+              </div>
+            </label>
+          </td>
+          <td><div class="fw-semibold">${razonSocial}</div></td>
+          <td><span class="text-black small">${nit}</span></td>
+          <td class="text-end"><div class="fw-semibold">${renovacion}</div></td>
+        </tr>
+      `;
+        });
+    }
 
     html += `
-                </tbody>
-            </table>
-        </div>
-    `;
+        </tbody>
+      </table>
+    </div>
+  `;
 
     contenedor.innerHTML = html;
-    setTimeout(() => mostrarModalDeCarga(false), 3000);
+
+    if (!hayempresas) {
+        contenedor.innerHTML = '';
+        mostrarAlertaDePasoVacio(contenedor, 'No hay empresas disponibles para mostrar');
+    }
 }
+
 function selectEmpresa(matricula, element) {
-    console.log('Matrícula seleccionada:', matricula);
     numero_matricula = matricula;
     // Buscar la empresa por matrícula
     const empresa = empresasBusqueda.find(emp =>
@@ -199,7 +211,7 @@ function selectEmpresa(matricula, element) {
         numero_matricula = empresa.matricula || '';
         razonsocial = empresa.nombre || '';
         proponente = empresa.proponente || '';
-        nit = empresa.nit || empresa.identificacion || '';
+        NIT = empresa.nit || empresa.identificacion || '';
         certificadosDisponibles = JSON.parse(empresa.certificados) || [];
     }
 
@@ -226,9 +238,9 @@ function selectEmpresa(matricula, element) {
 async function crearTiposDeCertificadosDisponibles() {
     const contenedor = document.getElementById('selectcertificados');
     if (!contenedor) return;
-    if (!numero_matricula || !razonsocial || !nit) return;
+    if (!numero_matricula || !razonsocial || !NIT) return;
     // Si quieres usar el inicio de transacción, ya tienes el resp aquí:
-    const res  = await conectarseEndPoint('registrarInicioTransaccion', {numero_matricula, razonsocial, nit,  camara: camara_comercio});
+    const res = await conectarseEndPoint('registrarInicioTransaccion', { numero_matricula, razonsocial, nit: NIT, camara: camara_comercio });
     const resp = res.DATOS || {};
     datosInicioDeTransaccion = resp;
     // Aquí puedes usar `resp` si lo necesitas (idTransaccion, etc.)
@@ -281,6 +293,7 @@ async function crearTiposDeCertificadosDisponibles() {
                 <td class="text-center">
                     <input 
                         type="number"
+                        name="cantidad"
                         min="0"
                         value="0"
                         class="form-control form-control-sm text-center"
@@ -318,16 +331,39 @@ async function crearTiposDeCertificadosDisponibles() {
 }
 
 async function generarLinkDePago() {
-    mostrarModalDeCarga();
     if (!datosInicioDeTransaccion) return;
+
     const contenedor = document.getElementById('resumenGeneralPago');
-    let certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFaciltransaID;
-    const res = await conectarseEndPoint('generarEnlacePago', {matricula: numero_matricula, proponente, razonsocial, certificadoFaciltransaID});
+    const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFacilTransaID;
+    const datos = new URLSearchParams();
+
+    datos.append("controlador", "formulario");
+    datos.append("operacion", "generarEnlacePago");
+
+    datos.append("matricula", numero_matricula);
+    datos.append("proponente", proponente);
+    datos.append("razonsocial", razonsocial);
+    datos.append("certificadoFaciltransaID", certificadoFaciltransaID);
+
+    if (certificadosDisponibles) {
+        certificadosDisponibles.forEach(cert => {
+            if (!cert.servicio) return;
+            datos.append(`certificados[${cert.servicio}][]`, cert.valor);
+            datos.append(`certificados[${cert.servicio}][]`, cert.cantidad);
+        });
+    }
+
+    for (const [key, value] of datos.entries()) {
+        console.log(key, value);
+    }
+    // 🔹 Llamada
+    const res = await conectarseEndPoint("generarEnlacePago", datos);
     const resp = res.DATOS || [];
     const liquidacion = resp.idliquidacion;
     const recuperacion = resp.numerorecuperacion || "SIN-DATO";
     const enlace = resp.urlparapago || "#";
-    const qr = resp.qrBase64 || "";
+    let qr = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' +
+        encodeURIComponent(enlace);
 
     let html = `
         <div class="resumen-pago mt-3">
@@ -363,10 +399,10 @@ async function generarLinkDePago() {
                     <label class="fw-semibold mb-1">Enlace de pago</label>
 
                     <div class="input-group mb-2">
-                        <input type="text" class="form-control" id="campoEnlacePago" value="${enlace}" readonly>
-                        <button class="btn btn-outline-secondary" onclick="copiarEnlacePago()">
-                            <i class="bi bi-clipboard"></i>
-                        </button>
+                    <input type="text" class="form-control" id="campoEnlacePago" value="${enlace}" readonly>
+                    <button type="button" class="btn btn-outline-secondary" onclick="copiarEnlacePago()">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
                     </div>
 
                     <small class="text-muted">Puedes copiar el enlace si deseas pagarlo desde otro dispositivo.</small>
@@ -398,12 +434,15 @@ async function generarLinkDePago() {
                 <!-- DERECHA QR -->
                 <div class="col-12 col-lg-5">
                     <div class="qr-box text-center">
-                        ${qr ? `<img src="data:image/png;base64,${qr}" class="img-fluid" />`
-            : `<div class="qr-placeholder"></div>`}
-                        <small class="text-muted d-block mt-2">Escanea el código desde tu celular para pagar.</small>
+                        ${qr
+            ? `<img src="${qr}" class="img-fluid" alt="QR de pago" />`
+            : `<div class="qr-placeholder"></div>`
+        }
+                        <small class="text-muted d-block mt-2">
+                            Escanea el código desde tu celular para pagar.
+                        </small>
                     </div>
                 </div>
-
             </div>
 
             <!-- BOTÓN DE DESCARGA -->
@@ -418,7 +457,6 @@ async function generarLinkDePago() {
     `;
 
     contenedor.innerHTML = html;
-    setTimeout(() => mostrarModalDeCarga(false), 3000);
 }
 
 
@@ -472,22 +510,43 @@ function formatearMoneda(valor) {
     }).format(valor || 0);
 }
 
-async function conectarseEndPoint(operacion) {
-    const api = 'data.php?operacion=' + encodeURIComponent(operacion);
+async function conectarseEndPoint(operacion, datos = {}) {
 
+    const url = `data.php?operacion=${encodeURIComponent(operacion)}`;
     mostrarModalDeCarga(true);
+    let body;
 
     try {
-        const response = await fetch(api, { method: 'GET' });
+        if (datos instanceof URLSearchParams) {
+            body = datos;
+        } else if (typeof datos === 'object' && datos !== null) {
+            body = JSON.stringify(datos);
+        } else {
+            body = datos.toString();
+        }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body
+        });
 
         if (!response.ok) {
-            throw new Error('Error en la petición: ' + response.status);
+            const txt = await response.text().catch(() => "");
+            throw new Error(`HTTP ${response.status}: ${txt || "Error en la petición"}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+
+        if (data?.RESPUESTA && data.RESPUESTA !== "EXITO") {
+            throw new Error(data.MENSAJE || "La operación devolvió error");
+        }
+
+        return data;
 
     } catch (error) {
-        console.error('Error en conectarseEndPoint:', error);
+        console.error("Error en conectarseEndPoint:", error);
         throw error;
 
     } finally {
@@ -495,36 +554,21 @@ async function conectarseEndPoint(operacion) {
     }
 }
 
-// window.conectarseEndPoint = async function (operacion, params = {}) {
-//     const api = 'https://api.citurcam.com/' + operacion;
+async function validarEstadoPagoSI() {
+    if (!datosInicioDeTransaccion || !datosInicioDeTransaccion.certificadoFaciltransaID) return;
 
-//     if (typeof params !== 'object' || params === null) {
-//         params = params.toString();
-//     }
-//     mostrarModalDeCarga();
-//     try {
-//         const response = await fetch(api, {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/x-www-form-urlencoded'
-//             },
-//             body: JSON.stringify(params)
-//         });
+    try {
+        const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFaciltransaID;
+        const res =  await conectarseEndPoint('validarEstadoPagoSI', {certificadoFaciltransaID});
 
-//         if (!response.ok) {
-//             throw new Error('Error en la petición: ' + response.status);
-//         }
+        if (res || res.RESPUESTA == 'EXITO'){
+            
+        }
+    }catch{
 
-//         return await response.json();
+    }
+}
 
-//     } catch (error) {
-//         console.error("Error en conectarseEndPoint:", error);
-//         throw error;
-
-//     } finally {
-//         mostrarModalDeCarga(false);
-//     }
-// }
 function mostrarModalDeCarga(opcion = true) {
     if (opcion) {
         document.getElementById('loadingOverlay').classList.remove('d-none');
@@ -532,3 +576,29 @@ function mostrarModalDeCarga(opcion = true) {
         document.getElementById('loadingOverlay').classList.add('d-none');
     }
 }
+function mostrarAlertaDePasoVacio(contenedor, mensaje) {
+    if (!contenedor) return;
+
+    contenedor.innerHTML = `
+        <div class="alerta-paso-vacio">
+            ${mensaje}
+        </div>
+
+        <!-- Input "fantasma" requerido que bloquea el paso -->
+        <input 
+            type="text" 
+            class="input-bloqueo-paso"
+            required
+            value=""
+            tabindex="-1"
+            aria-hidden="true"
+        >
+    `;
+}
+
+function copiarEnlacePago() {
+  const input = document.getElementById('campoEnlacePago');
+  input.select();
+  document.execCommand('copy');
+}
+
