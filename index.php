@@ -20,7 +20,8 @@
 
     <!-- Script Wizard-JS -->
     <script src="https://cdn.jsdelivr.net/gh/AdrianVillamayor/Wizard-JS@2.0.3/dist/index.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
 
 </head>
@@ -44,6 +45,8 @@
 
                         <!-- PASO 1 -->
                         <div class="wizard-step" data-wz-title="Búsqueda">
+                            <input type="hidden" id="flagTipoBusqueda" name="flagTipoBusqueda" value="0">
+
                             <div class="mt-3">
                                 <label class="form-label">Camara de comercio</label>
                                 <select name="camara_comercio" id="camaraDeComercio" class="form-control required" required>
@@ -51,12 +54,22 @@
                             </div>
                             <div class="mt-3">
                                 <label class="form-label">Tipo de busqueda</label>
-                                <select name="criterio_busqueda" id="criterioDeBusqueda" class="form-control required" required>
-                                </select>
+                                <div id="criterioDeBusqueda" class="mt-2"></div>
+                                <small class="text-muted">Elige cómo deseas buscar la empresa.</small>
                             </div>
                             <div class="mt-3">
                                 <label class="form-label">Criterio o palabra clave</label>
                                 <input type="text" name="palabra_clave" id="palabraClave" class="form-control required" required>
+                            </div>
+                            <div class="mt-4 d-grid">
+                                <button
+                                    type="button"
+                                    id="btnBuscar"
+                                    onclick="buscarEmpresasDisponibles();"
+                                    class="btn btn-primary btn-lg d-flex align-items-center justify-content-center gap-2">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span class="btn-text">Buscar empresa</span>
+                                </button>
                             </div>
                         </div>
 

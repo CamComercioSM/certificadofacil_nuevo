@@ -53,7 +53,7 @@ if ($jsonPOST) {
     $datos = $_POST['datos'];
 } elseif (isset($_GET['datos'])) {
     $datos = $_GET['datos'];
-}elseif (!empty($_POST)) {
+} elseif (!empty($_POST)) {
     $datos = $_POST;
 }
 require('libs/ApiSICAM.php');
@@ -112,11 +112,44 @@ switch ($operacion) {
             $datos,
         );
         break;
-        case 'validarEstadoPagoSII':
+    case 'validarEstadoPagoSII':
+        print($datos);die();
         $respuesta = $Api->ejecutar(
             'tienda-apps',
             'certificadoFacil',
             'validarEstadoPagoSII',
+            $datos,
+        );
+        break;
+    case 'registrarCopiarEnlace':
+        $respuesta = $Api->ejecutar(
+            'tienda-apps',
+            'certificadoFacil',
+            'registrarCopiarEnlace',
+            $datos,
+        );
+        break;
+    case 'registrarAbrirEnlace':
+        $respuesta = $Api->ejecutar(
+            'tienda-apps',
+            'certificadoFacil',
+            'registrarAbrirEnlace',
+            $datos,
+        );
+        break;
+    case 'registrarCompartirEnlace':
+        $respuesta = $Api->ejecutar(
+            'tienda-apps',
+            'certificadoFacil',
+            'registrarCompartirEnlace',
+            $datos,
+        );
+        break;
+    case 'recuperarCertificados':
+        $respuesta = $Api->ejecutar(
+            'tienda-apps',
+            'certificadoFacil',
+            'recuperarCertificados',
             $datos,
         );
         break;

@@ -6,14 +6,15 @@ let palabra_clave = null;
 let numero_matricula = null;
 let razonsocial = null;
 let NIT = null;
+let certificadoFaciltransaID = null;
 let certificadosDisponibles = null;
 let datosInicioDeTransaccion = null;
+let timerEstadoPago = null;
 let tiposBusqueda = [
     { id: "RAZONSOCIAL", nombre: "Razón Social" },
     { id: "NIT", nombre: "NIT" },
     { id: "MATRICULA", nombre: "Número de Matrícula" },
 ]
-
 const args = {
     "wz_class": ".wizard",
     "wz_nav_style": "dots",
@@ -26,7 +27,6 @@ const args = {
     "next": "Siguiente",
     "prev": "Atras"
 };
-
 const wizard = new Wizard(args);
 wizard.init();
 const $wz_doc = document.querySelector(wz_class);
@@ -37,24 +37,38 @@ function avanzarPaso() {
         nextBtn.click();
     }
 }
+function regresarPaso() {
+    const prevBtn = document.querySelector('.wizard .wizard-btn.prev');
+    if (prevBtn) {
+        prevBtn.click();
+    }
+}
+
 $wz_doc.addEventListener("wz.btn.next", function (e) {
 
     const step = wizard.current_step;
 
-    if (step === 0) {
-        crearTarjetasDeEmpresasDisponibles();
-    }
     if (step === 1) {
         crearTiposDeCertificadosDisponibles();
     }
     if (step === 2) {
         generarLinkDePago();
+        timerEstadoPago = setInterval(async () => {
+            const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFacilTransaID;
+            if (!certificadoFaciltransaID) return;
+            const datos = formulario('consultarEstadoPagoSII', { certificadoFaciltransaID });
+            try {
+                const res = await conectarseEndPointSinModal('consultarEstadoPagoSII', datos);
+                console.log(res);
+            } catch (e) {
+                console.error(e);
+            }
+        }, 8000);
     }
 });
-
 let selectCamaraComercio = document.getElementById('camaraDeComercio');
 let inputBusqueda = document.getElementById('palabraClave');
-let selectTipoBusqueda = document.getElementById('criterioDeBusqueda');
+let TipoBusqueda = document.getElementById('criterioDeBusqueda');
 selectCamaraComercio.addEventListener('change', function () {
 
     const camaraIDSeleccionada = Number(this.value);
@@ -83,8 +97,8 @@ selectCamaraComercio.addEventListener('change', function () {
 
 async function cargarInformacionCamarasAndTipoBusqueda() {
     const selectCamaraComercio = document.getElementById('camaraDeComercio');
-    const selectTipoBusqueda = document.getElementById('criterioDeBusqueda');
-    if (!selectTipoBusqueda || !selectCamaraComercio) return;
+    const tipoBusqueda = document.getElementById('criterioDeBusqueda');
+    if (!tipoBusqueda || !selectCamaraComercio) return;
     const res = await conectarseEndPoint("listadoCamaras");
     const resp = res.DATOS || [];
 
@@ -95,111 +109,148 @@ async function cargarInformacionCamarasAndTipoBusqueda() {
         selectCamaraComercio.appendChild(opt);
     });
     selectCamaraComercio.value = "32";
-
-    tiposBusqueda.forEach(item => {
-        const opt = document.createElement("option");
-        opt.value = item.id;
-        opt.textContent = item.nombre;
-        selectTipoBusqueda.appendChild(opt);
+    tipoBusqueda.innerHTML = "";
+    tiposBusqueda.forEach((item, index) => {
+        tipoBusqueda.innerHTML += `
+    <input
+      type="radio"
+      class="btn-check"
+      name="criterio_busqueda"
+      id="tipoBusqueda${index}"
+      value="${item.id}"
+      autocomplete="off"
+      onchange="selectTipoBusqueda('${item.id}')"
+    >
+    <label class="btn btn-outline-primary" for="tipoBusqueda${index}">
+      ${item.nombre}
+    </label>
+  `;
     });
+    const first = document.querySelector('#criterioDeBusqueda input[name="criterio_busqueda"]');
+    if (first) {
+        first.checked = true;
+        selectTipoBusqueda(first.value, first);
+    }
 
 }
 
+function selectTipoBusqueda(tipo) {
+    criterio_busqueda = tipo;
+
+    const flag = document.getElementById('flagTipoBusqueda');
+    const algunoMarcado = !!document.querySelector('input[name="criterio_busqueda"]:checked');
+    if (flag) flag.value = algunoMarcado ? '1' : '0';
+}
+function buscarEmpresasDisponibles() {
+    const btnBuscar = document.getElementById('btnBuscar');
+
+    btnBuscar.addEventListener('click', async () => {
+        if (btnBuscar.disabled) return;   // evita re-entradas
+        btnBuscar.disabled = true;
+
+        try {
+            camara_comercio = document.getElementById('camaraDeComercio')?.value;
+            palabra_clave = document.getElementById('palabraClave')?.value;
+            if (!camara_comercio || !criterio_busqueda || !palabra_clave) return;
+
+            const datos = formulario('buscarTiposCertificados', {
+                camara_comercio,
+                criterio_busqueda,
+                palabra_clave,
+                pagina: 0
+            });
+
+            let res = await conectarseEndPoint('buscarTiposCertificados', datos);
+
+            if (res.RESPUESTA !== 'EXITO') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Atención',
+                    text: res.MENSAJE || 'La operación no fue exitosa'
+                });
+                return;
+            }
+
+            const expedientes = res?.DATOS?.expedientes || [];
+            empresasBusqueda = expedientes;
+
+            if (empresasBusqueda?.length) {
+                await crearTarjetasDeEmpresasDisponibles();
+                avanzarPaso();
+            }
+        } finally {
+            btnBuscar.disabled = false; // siempre lo re-habilita
+        }
+    });
+}
+
 async function crearTarjetasDeEmpresasDisponibles() {
-    const flag = document.getElementById('flagEmpresa');
-    if (flag) flag.value = '0';
-
-    camara_comercio = document.getElementById('camaraDeComercio')?.value;
-    criterio_busqueda = document.getElementById('criterioDeBusqueda')?.value;
-    palabra_clave = document.getElementById('palabraClave')?.value;
-
     const contenedor = document.getElementById('selectEmpresa');
-
     if (!contenedor) return;
 
-    if (!camara_comercio || !criterio_busqueda || !palabra_clave) {
+    const flag = document.getElementById('flagEmpresas');
+    if (flag) flag.value = '0';
+
+    if (!empresasBusqueda?.length) {
         contenedor.innerHTML = '';
-        mostrarAlertaDePasoVacio(contenedor, 'Seleccione cámara, criterio e ingrese un valor para buscar.');
+        mostrarAlertaDePasoVacio(contenedor, 'No hay empresas disponibles para mostrar');
         return;
     }
 
-    let hayempresas = false;
-
-    const res = await conectarseEndPoint('buscarTiposCertificados', {
-        camara_comercio,
-        criterio_busqueda,
-        palabra_clave,
-        pagina: 1
-    });
-    if (res.RESPUESTA !== 'EXITO') return;
-
-    // 2) Soporta ambas formas comunes de respuesta
-    const expedientes = res.DATOS.expedientes || [];
-    empresasBusqueda = expedientes;
-
     let html = `
-    <div class="table-responsive">
-      <table class="table align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Tipo / Matrícula</th>
-            <th>Razón social</th>
-            <th>NIT / Num. ID</th>
-            <th class="text-end">Actualizado el</th>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Tipo / Matrícula</th>
+              <th>Razón social</th>
+              <th>NIT / Num. ID</th>
+              <th class="text-end">Actualizado el</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    empresasBusqueda.forEach((emp, index) => {
+        const tipo = emp?.tipopersona || "-";
+        const matricula = emp?.matricula || "-";
+        const razonSocial = emp?.nombre || "-";
+        const nit = emp?.identificacion || "-";
+        const renovacion = emp?.fecharenovacion || "-";
+
+        html += `
+          <tr class="empresa-card">
+            <td>
+              <label class="option-card w-100 mb-0">
+                <input 
+                  type="radio"
+                  name="empresaSeleccionada"
+                  id="empresa${index}"
+                  value="${matricula}"
+                  data-index="${index}"
+                  data-require-if="flagEmpresas:0"
+                  onchange="selectEmpresa('${matricula}', this)"
+                >
+                <div class="d-flex flex-column">
+                  <span class="fw-semibold">${tipo}</span>
+                  <span class="text-muted small">Matrícula: ${matricula}</span>
+                </div>
+              </label>
+            </td>
+            <td><div class="fw-semibold">${razonSocial}</div></td>
+            <td><span class="text-black small">${nit}</span></td>
+            <td class="text-end"><div class="fw-semibold">${renovacion}</div></td>
           </tr>
-        </thead>
-        <tbody>
-  `;
-
-    if (empresasBusqueda.length > 0) {
-        hayempresas = true;
-
-        empresasBusqueda.forEach((emp, index) => {
-            const tipo = emp?.tipopersona || "-";
-            const matricula = emp?.matricula || "-";
-            const razonSocial = emp?.nombre || "-";
-            const nit = emp?.identificacion || "-";
-            const renovacion = emp?.fecharenovacion || "-";
-
-            html += `
-        <tr class="empresa-card">
-          <td>
-            <label class="option-card w-100 mb-0">
-              <input 
-                type="radio"
-                name="empresaSeleccionada"
-                id="empresa${index}"
-                value="${matricula}"
-                data-index="${index}"
-                data-require-if="flagEmpresa:0"
-                onchange="selectEmpresa('${matricula}', this)"
-              >
-              <div class="d-flex flex-column">
-                <span class="fw-semibold">${tipo}</span>
-                <span class="text-muted small">Matrícula: ${matricula}</span>
-              </div>
-            </label>
-          </td>
-          <td><div class="fw-semibold">${razonSocial}</div></td>
-          <td><span class="text-black small">${nit}</span></td>
-          <td class="text-end"><div class="fw-semibold">${renovacion}</div></td>
-        </tr>
-      `;
-        });
-    }
+        `;
+    });
 
     html += `
-        </tbody>
-      </table>
-    </div>
-  `;
+          </tbody>
+        </table>
+      </div>
+    `;
 
     contenedor.innerHTML = html;
-
-    if (!hayempresas) {
-        contenedor.innerHTML = '';
-        mostrarAlertaDePasoVacio(contenedor, 'No hay empresas disponibles para mostrar');
-    }
 }
 
 function selectEmpresa(matricula, element) {
@@ -233,24 +284,34 @@ function selectEmpresa(matricula, element) {
 
     avanzarPaso();
 }
-
-
 async function crearTiposDeCertificadosDisponibles() {
     const contenedor = document.getElementById('selectcertificados');
     if (!contenedor) return;
     if (!numero_matricula || !razonsocial || !NIT) return;
     // Si quieres usar el inicio de transacción, ya tienes el resp aquí:
-    const res = await conectarseEndPoint('registrarInicioTransaccion', { numero_matricula, razonsocial, nit: NIT, camara: camara_comercio });
+    const datos = formulario('registrarInicioTransaccion', {
+        numero_matricula,
+        razonsocial,
+        nit: NIT,
+        camara: camara_comercio
+    });
+    let res;
+    try {
+        res = await conectarseEndPoint('registrarInicioTransaccion', datos);
+    } catch (e) {
+        contenedor.innerHTML = '';
+        mostrarAlertaDePasoVacio(contenedor, e?.message || 'No fue posible iniciar la transacción.');
+        return;
+    }
     const resp = res.DATOS || {};
     datosInicioDeTransaccion = resp;
-    // Aquí puedes usar `resp` si lo necesitas (idTransaccion, etc.)
+    certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFacilTransaID;
 
+    const flagCert = document.getElementById('flagCertificados');
+    if (flagCert) flagCert.value = '0';
     if (!certificadosDisponibles || !certificadosDisponibles.length) {
-        contenedor.innerHTML = `
-            <div class="alert alert-warning mb-0 text-center">
-                No hay certificados disponibles para esta empresa.
-            </div>
-        `;
+        contenedor.innerHTML = '';
+        mostrarAlertaDePasoVacio(contenedor, 'No hay certificados disponibles para esta empresa.');
         return;
     }
 
@@ -326,7 +387,7 @@ async function crearTiposDeCertificadosDisponibles() {
             </div>
         </div>
     `;
-
+    if (flagCert) flagCert.value = '1';
     contenedor.innerHTML = html;
 }
 
@@ -334,17 +395,12 @@ async function generarLinkDePago() {
     if (!datosInicioDeTransaccion) return;
 
     const contenedor = document.getElementById('resumenGeneralPago');
-    const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFacilTransaID;
-    const datos = new URLSearchParams();
-
-    datos.append("controlador", "formulario");
-    datos.append("operacion", "generarEnlacePago");
-
-    datos.append("matricula", numero_matricula);
-    datos.append("proponente", proponente);
-    datos.append("razonsocial", razonsocial);
-    datos.append("certificadoFaciltransaID", certificadoFaciltransaID);
-
+    const datos = formulario('generarEnlacePago', {
+        "matricula": numero_matricula,
+        "proponente": proponente,
+        razonsocial,
+        certificadoFaciltransaID
+    });
     if (certificadosDisponibles) {
         certificadosDisponibles.forEach(cert => {
             if (!cert.servicio) return;
@@ -352,11 +408,6 @@ async function generarLinkDePago() {
             datos.append(`certificados[${cert.servicio}][]`, cert.cantidad);
         });
     }
-
-    for (const [key, value] of datos.entries()) {
-        console.log(key, value);
-    }
-    // 🔹 Llamada
     const res = await conectarseEndPoint("generarEnlacePago", datos);
     const resp = res.DATOS || [];
     const liquidacion = resp.idliquidacion;
@@ -409,22 +460,24 @@ async function generarLinkDePago() {
 
                     <!-- BOTONES -->
                     <div class="d-flex flex-column flex-md-row gap-2 mt-3">
-
-                        <a href="${enlace}" target="_blank" class="btn btn-primary w-100">
+                        <button
+                            type="button"
+                            class="btn btn-primary w-100"
+                            onclick="abrirEnlacePago('${enlace}')">
                             <i class="bi bi-link-45deg me-1"></i>
                             Abrir enlace de pago
-                        </a>
-
-                        <a href="https://wa.me/?text=${encodeURIComponent(enlace)}" 
-                           target="_blank" 
-                           class="btn btn-outline-success w-100">
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-outline-success w-100"
+                            onclick="compartirEnlacePago('${enlace}')">
                             <i class="bi bi-whatsapp me-1"></i>
                             Enviar enlace por WhatsApp
-                        </a>
+                        </button>
 
                         <button type="button" 
                                 class="btn btn-outline-secondary w-100" 
-                                onclick="wizard.prev()">
+                                onclick="clearInterval(timerEstadoPago); regresarPaso();">
                             <i class="bi bi-arrow-left me-1"></i>
                             Volver a certificados
                         </button>
@@ -447,7 +500,11 @@ async function generarLinkDePago() {
 
             <!-- BOTÓN DE DESCARGA -->
             <div class="mt-4">
-                <button class="btn btn-success w-100 py-2 fw-semibold">
+                <button
+                    type="button"
+                    class="btn btn-success w-100 py-2 fw-semibold"
+                    onclick="validarEstadoPagoSII()"
+                >
                     <i class="bi bi-file-earmark-arrow-down me-2"></i>
                     Si ya pagaste, puedes descargar tu certificado dando clic aquí
                 </button>
@@ -459,6 +516,21 @@ async function generarLinkDePago() {
     contenedor.innerHTML = html;
 }
 
+async function validarEstadoPagoSII() {
+    if (!datosInicioDeTransaccion) return;
+
+    const datos = new URLSearchParams();
+
+    datos.append("controlador", "formulario");
+    datos.append("operacion", "validarEstadoPagoSII");
+    datos.append("certificadoFaciltransaID", certificadoFaciltransaID);
+    try {
+        const res = await conectarseEndPoint('validarEstadoPagoSII', datos);
+        console.log(res);
+    } catch (e) {
+        console.error(e);
+    }
+}
 
 function actualizarCantidadCertificado(index, input) {
     if (!certificadosDisponibles || !certificadosDisponibles[index]) return;
@@ -539,10 +611,6 @@ async function conectarseEndPoint(operacion, datos = {}) {
 
         const data = await response.json();
 
-        if (data?.RESPUESTA && data.RESPUESTA !== "EXITO") {
-            throw new Error(data.MENSAJE || "La operación devolvió error");
-        }
-
         return data;
 
     } catch (error) {
@@ -551,21 +619,6 @@ async function conectarseEndPoint(operacion, datos = {}) {
 
     } finally {
         mostrarModalDeCarga(false);
-    }
-}
-
-async function validarEstadoPagoSI() {
-    if (!datosInicioDeTransaccion || !datosInicioDeTransaccion.certificadoFaciltransaID) return;
-
-    try {
-        const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFaciltransaID;
-        const res =  await conectarseEndPoint('validarEstadoPagoSI', {certificadoFaciltransaID});
-
-        if (res || res.RESPUESTA == 'EXITO'){
-            
-        }
-    }catch{
-
     }
 }
 
@@ -595,10 +648,102 @@ function mostrarAlertaDePasoVacio(contenedor, mensaje) {
         >
     `;
 }
+async function conectarseEndPointSinModal(operacion, datos = {}) {
 
-function copiarEnlacePago() {
-  const input = document.getElementById('campoEnlacePago');
-  input.select();
-  document.execCommand('copy');
+    const url = `data.php?operacion=${encodeURIComponent(operacion)}`;
+    let body;
+    try {
+        if (datos instanceof URLSearchParams) {
+            body = datos;
+        } else if (typeof datos === 'object' && datos !== null) {
+            body = JSON.stringify(datos);
+        } else {
+            body = datos.toString();
+        }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body
+        });
+        if (!response.ok) {
+            const txt = await response.text().catch(() => "");
+            throw new Error(`HTTP ${response.status}: ${txt || "Error en la petición"}`);
+        }
+
+        const data = await response.json();
+
+        if (data?.RESPUESTA && data.RESPUESTA !== "EXITO") {
+            throw new Error(data.MENSAJE || "La operación devolvió error");
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error("Error en conectarseEndPoint:", error);
+        throw error;
+    }
+}
+async function copiarEnlacePago() {
+    const input = document.getElementById('campoEnlacePago');
+    input.select();
+    document.execCommand('copy');
+    const datos = formulario('registrarCopiarEnlace', { certificadoFaciltransaID });
+    const res = await conectarseEndPointSinModal('registrarCopiarEnlace', datos);
+    console.log(res);
+}
+async function abrirEnlacePago(url) {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener');
+    const datos = formulario('registrarAbrirEnlace', { certificadoFaciltransaID });
+    const res = await conectarseEndPointSinModal('registrarAbrirEnlace', datos);
+    console.log(res);
+}
+async function compartirEnlacePago(enlace) {
+    if (!enlace) return;
+
+    const url = `https://wa.me/?text=${encodeURIComponent(enlace)}`;
+    window.open(url, '_blank', 'noopener');
+    const datos = formulario('registrarCompartirEnlace', { certificadoFaciltransaID });
+    const res = await conectarseEndPointSinModal('registrarCompartirEnlace', datos);
+    console.log(res);
 }
 
+function formulario(operacion, params = {}) {
+    const datos = new URLSearchParams();
+    datos.append("controlador", "formulario");
+    datos.append("operacion", operacion);
+    if (typeof params !== 'object' || params === null) {
+        return datos;
+    }
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+
+        // 🔹 Soporta arrays
+        if (Array.isArray(value)) {
+            value.forEach(v => {
+                if (v !== undefined && v !== null) {
+                    datos.append(`${key}[]`, v);
+                }
+            });
+            return;
+        }
+
+        // 🔹 Soporta objetos simples (1 nivel)
+        if (typeof value === 'object') {
+            Object.entries(value).forEach(([k, v]) => {
+                if (v !== undefined && v !== null) {
+                    datos.append(`${key}[${k}]`, v);
+                }
+            });
+            return;
+        }
+
+        // 🔹 Primitivos
+        datos.append(key, value);
+    });
+
+    return datos;
+}
