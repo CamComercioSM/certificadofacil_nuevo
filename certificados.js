@@ -63,7 +63,7 @@ $wz_doc.addEventListener("wz.btn.next", function (e) {
             } catch (e) {
                 console.error(e);
             }
-        }, 8000);
+        }, 30000);
     }
 });
 let selectCamaraComercio = document.getElementById('camaraDeComercio');
@@ -525,28 +525,25 @@ async function validarEstadoPagoSII() {
     try {
         const res = await conectarseEndPoint('validarEstadoPagoSII', datos);
 
-        // Si el backend responde INFO o ERROR
         if (res?.RESPUESTA && res.RESPUESTA !== 'EXITO') {
             Swal.fire({
-                icon: res.RESPUESTA === 'INFO' ? 'info' : 'error',
-                title: 'Estado del pago',
-                text: res.MENSAJE || 'No fue posible validar el estado del pago',
+                icon: res.RESPUESTA === 'ALERTA' ? 'warning' : 'info',
+                title: 'Estado de la transacción',
+                html: res.MENSAJE || 'No fue posible validar el estado del pago.',
                 confirmButtonText: 'Aceptar'
             });
             return;
         }
 
-        // Si todo salió bien (EXITO)
+        // Éxito
         Swal.fire({
             icon: 'success',
             title: 'Pago confirmado',
-            text: res.MENSAJE || 'El pago fue validado correctamente',
+            html: res.MENSAJE || 'El pago fue validado correctamente.',
             confirmButtonText: 'Aceptar'
         });
 
     } catch (e) {
-        console.error(e);
-
         Swal.fire({
             icon: 'error',
             title: 'Error de comunicación',

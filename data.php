@@ -113,7 +113,6 @@ switch ($operacion) {
         );
         break;
     case 'validarEstadoPagoSII':
-        print($datos);die();
         $respuesta = $Api->ejecutar(
             'tienda-apps',
             'certificadoFacil',
