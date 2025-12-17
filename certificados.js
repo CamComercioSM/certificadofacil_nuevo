@@ -95,10 +95,12 @@ selectCamaraComercio.addEventListener('change', function () {
     window.open(enlace, "_blank");
 });
 
+
 async function cargarInformacionCamarasAndTipoBusqueda() {
     const selectCamaraComercio = document.getElementById('camaraDeComercio');
     const tipoBusqueda = document.getElementById('criterioDeBusqueda');
     if (!tipoBusqueda || !selectCamaraComercio) return;
+
     const res = await conectarseEndPoint("listadoCamaras");
     const resp = res.DATOS || [];
 
@@ -109,37 +111,34 @@ async function cargarInformacionCamarasAndTipoBusqueda() {
         selectCamaraComercio.appendChild(opt);
     });
     selectCamaraComercio.value = "32";
+
     tipoBusqueda.innerHTML = "";
+
     tiposBusqueda.forEach((item, index) => {
         tipoBusqueda.innerHTML += `
-    <input
-      type="radio"
-      class="btn-check"
-      name="criterio_busqueda"
-      id="tipoBusqueda${index}"
-      value="${item.id}"
-      autocomplete="off"
-      onchange="selectTipoBusqueda('${item.id}')"
-    >
-    <label class="btn btn-outline-primary" for="tipoBusqueda${index}">
-      ${item.nombre}
-    </label>
-  `;
+      <input type="radio" class="btn-check"
+        name="criterio_busqueda"
+        id="tipoBusqueda${index}"
+        value="${item.id}"
+        onchange="selectTipoBusqueda('${item.id}')">
+      <label class="btn btn-outline-primary" for="tipoBusqueda${index}">
+        ${item.nombre}
+      </label>
+    `;
     });
+
     const first = document.querySelector('#criterioDeBusqueda input[name="criterio_busqueda"]');
     if (first) {
         first.checked = true;
-        selectTipoBusqueda(first.value, first);
+        selectTipoBusqueda(first.value);
     }
-
 }
 
 function selectTipoBusqueda(tipo) {
     criterio_busqueda = tipo;
 
     const flag = document.getElementById('flagTipoBusqueda');
-    const algunoMarcado = !!document.querySelector('input[name="criterio_busqueda"]:checked');
-    if (flag) flag.value = algunoMarcado ? '1' : '0';
+    if (flag) flag.value = '1';
 }
 function buscarEmpresasDisponibles() {
     const btnBuscar = document.getElementById('btnBuscar');
@@ -421,7 +420,7 @@ async function generarLinkDePago() {
 
             <h5 class="mb-1">Resumen del pago</h5>
             <p class="text-muted mb-4">
-                Conserva estos datos para futuras consultas o reimpresión de certificados.
+                Los numeros de liquidacion y recuperacion pueden usarse para completar el proceso de pago con ayuda de un asesor
             </p>
 
             <!-- FILA PRINCIPAL -->
@@ -519,18 +518,44 @@ async function generarLinkDePago() {
 async function validarEstadoPagoSII() {
     if (!datosInicioDeTransaccion) return;
 
-    const datos = new URLSearchParams();
+    const datos = formulario('validarEstadoPagoSII', {
+        certificadoFaciltransaID
+    });
 
-    datos.append("controlador", "formulario");
-    datos.append("operacion", "validarEstadoPagoSII");
-    datos.append("certificadoFaciltransaID", certificadoFaciltransaID);
     try {
         const res = await conectarseEndPoint('validarEstadoPagoSII', datos);
-        console.log(res);
+
+        // Si el backend responde INFO o ERROR
+        if (res?.RESPUESTA && res.RESPUESTA !== 'EXITO') {
+            Swal.fire({
+                icon: res.RESPUESTA === 'INFO' ? 'info' : 'error',
+                title: 'Estado del pago',
+                text: res.MENSAJE || 'No fue posible validar el estado del pago',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+
+        // Si todo salió bien (EXITO)
+        Swal.fire({
+            icon: 'success',
+            title: 'Pago confirmado',
+            text: res.MENSAJE || 'El pago fue validado correctamente',
+            confirmButtonText: 'Aceptar'
+        });
+
     } catch (e) {
         console.error(e);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de comunicación',
+            text: e.message || 'Ocurrió un error al validar el estado del pago',
+            confirmButtonText: 'Aceptar'
+        });
     }
 }
+
 
 function actualizarCantidadCertificado(index, input) {
     if (!certificadosDisponibles || !certificadosDisponibles[index]) return;

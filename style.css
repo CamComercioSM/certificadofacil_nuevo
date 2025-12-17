@@ -83,8 +83,6 @@
     pointer-events: none;
 }
 
-/* Fondo azul solo para esta página */
-
 
 .page-wizard .appointment-window {
     background: #ffffff;
@@ -106,27 +104,6 @@
     padding: 30px;
     box-shadow: none;
     animation: fadeIn .3s ease;
-}
-
-/*Estilos para la pagina de cancelaciones*/
-.page-cancelaciones {
-    background-color: #f5f7fb;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-.page-cancelaciones .page-wrapper {
-    flex: 1 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1rem;
-}
-
-.page-cancelaciones .confirm-card {
-    max-width: 600px;
-    width: 100%;
 }
 
 .info-box {
