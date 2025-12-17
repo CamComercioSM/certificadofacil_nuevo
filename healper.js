@@ -215,3 +215,27 @@ window.formulario = function (operacion, params = {}) {
 
     return datos;
 }
+
+window.validarRedireccionCamara = function () {
+    const camaraIDSeleccionada = selectCamaraComercio.value;
+    const textoBusqueda = inputBusqueda.value.trim();
+
+    // No hay texto → no redirigir
+    if (!textoBusqueda) return;
+
+    const camara = listadoCamaras.find(
+        c => c.camaraCODIGO == camaraIDSeleccionada
+    );
+    if (!camara) return;
+
+    // Cámara principal (Santa Marta)
+    if (camara.camaraID === 32) return;
+
+    const enlace = camara.camaraUrlENLACE_VISTAPROPIA;
+    if (!enlace) {
+        console.warn("La cámara no tiene enlace configurado.");
+        return;
+    }
+
+    window.open(enlace, "_blank");
+}

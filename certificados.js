@@ -9,6 +9,7 @@ let NIT = null;
 let certificadoFaciltransaID = null;
 let certificadosDisponibles = null;
 let datosInicioDeTransaccion = null;
+let listadoCamaras = null;
 let timerEstadoPago = null;
 let tiposBusqueda = [
     { id: "RAZONSOCIAL", nombre: "Razón Social" },
@@ -69,31 +70,8 @@ $wz_doc.addEventListener("wz.btn.next", function (e) {
 let selectCamaraComercio = document.getElementById('camaraDeComercio');
 let inputBusqueda = document.getElementById('palabraClave');
 let TipoBusqueda = document.getElementById('criterioDeBusqueda');
-selectCamaraComercio.addEventListener('change', function () {
-
-    const camaraIDSeleccionada = Number(this.value);
-    const textoBusqueda = inputBusqueda.value.trim();
-
-    if (textoBusqueda.length === 0) {
-        console.warn("Debes escribir una palabra clave antes de redirigir.");
-        return;
-    }
-
-    const camara = listadoCamaras.DATOS.find(c => c.camaraID === camaraIDSeleccionada);
-    if (!camara) return;
-
-    if (camara.camaraID === 32) {
-        return;
-    }
-
-    const enlace = camara.camaraUrlENLACE_VISTAPROPIA;
-    if (!enlace) {
-        console.warn("La cámara no tiene enlace configurado.");
-        return;
-    }
-
-    window.open(enlace, "_blank");
-});
+selectCamaraComercio.addEventListener('change', validarRedireccionCamara);
+inputBusqueda.addEventListener('change', validarRedireccionCamara);
 
 
 async function cargarInformacionCamarasAndTipoBusqueda() {
@@ -102,9 +80,8 @@ async function cargarInformacionCamarasAndTipoBusqueda() {
     if (!tipoBusqueda || !selectCamaraComercio) return;
 
     const res = await conectarseEndPoint("listadoCamaras");
-    const resp = res.DATOS || [];
-
-    resp.forEach(item => {
+    listadoCamaras = res.DATOS || [];
+    listadoCamaras.forEach(item => {
         const opt = document.createElement("option");
         opt.value = item.camaraID;
         opt.textContent = item.camaraNOMBRE;
@@ -552,6 +529,3 @@ async function validarEstadoPagoSII() {
         });
     }
 }
-
-
-
