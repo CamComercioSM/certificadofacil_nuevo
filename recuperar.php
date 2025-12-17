@@ -80,7 +80,7 @@
     </div>
 
     <!-- Tus otros scripts -->
-    <!-- <script src="/helper.js"></script> -->
+    <script src="/healper.js"></script>
     <script src="/recuperar.js"></script>
 </body>
 
