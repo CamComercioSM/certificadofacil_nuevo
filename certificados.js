@@ -53,10 +53,16 @@ $wz_doc.addEventListener("wz.btn.next", function (e) {
         timerEstadoPago = setInterval(async () => {
             const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFacilTransaID;
             if (!certificadoFaciltransaID) return;
-            const datos = formulario('consultarEstadoPagoSII', { certificadoFaciltransaID });
+            const datos = formulario('consultarEstadoPagoSII', { certificadoFaciltransaID: '267687' });
             try {
                 const res = await conectarseEndPointSinModal('consultarEstadoPagoSII', datos);
-                console.log(res);
+                if (res?.RESPUESTA && res.RESPUESTA !== 'EXITO') {
+                    return;
+                }
+                const certificados = res.DATOS[0].certificados || [];
+                const informacionDeTransaccion = res.DATOS[0];
+                renderVistaDeDescargarCertificados(certificados, informacionDeTransaccion);
+
             } catch (e) {
                 console.error(e);
             }
@@ -260,7 +266,6 @@ async function crearTiposDeCertificadosDisponibles() {
     const contenedor = document.getElementById('selectcertificados');
     if (!contenedor) return;
     if (!numero_matricula || !razonsocial || !NIT) return;
-    // Si quieres usar el inicio de transacción, ya tienes el resp aquí:
     const datos = formulario('registrarInicioTransaccion', {
         numero_matricula,
         razonsocial,
@@ -543,15 +548,9 @@ async function validarEstadoPagoSII() {
             });
             return;
         }
-
-        // Éxito
-        Swal.fire({
-            icon: 'success',
-            title: 'Pago confirmado',
-            html: res.MENSAJE || 'El pago fue validado correctamente.',
-            confirmButtonText: 'Aceptar'
-        });
-
+        const certificados = res.DATOS[1].certificados;
+        const informacionDeTransaccion = res.DATOS[1];
+        renderVistaDeDescargarCertificados(certificados, informacionDeTransaccion);
     } catch (e) {
         Swal.fire({
             icon: 'error',
@@ -584,4 +583,130 @@ function actualizarFlagCertificados() {
     }
 
     flag.value = haySeleccion ? '1' : '0';
+}
+function renderVistaDeDescargarCertificados(certificados, informacionDeTransaccion) {
+    const win = document.querySelector('.appointment-window');
+    const info = informacionDeTransaccion || {};
+    let botonesHtml = '';
+    if (certificados.length) {
+        botonesHtml = certificados.map((c, idx) => {
+            const url = c.path;
+            const tipo = c.tipocertificado || 'Certificado';
+            const codigo = c.codigoverificacion || '';
+
+            if (!url) return '';
+
+            return `
+      <a href="${url}" target="_blank" rel="noopener noreferrer"
+         class="btn btn-primary btn-lg text-start d-flex align-items-center justify-content-between">
+        <span class="d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-pdf-fill fs-4"></i>
+          <span>
+            <div class="fw-semibold">Descargar ${tipo}</div>
+            <div class="small opacity-75">Código: ${codigo}</div>
+          </span>
+        </span>
+        <i class="bi bi-box-arrow-up-right"></i>
+      </a>
+    `;
+        }).join('');
+    } else {
+        botonesHtml = `<div class="text-muted">No hay certificados para descargar.</div>`;
+    }
+    win.innerHTML = `
+    <div class="text-center mb-4">
+      <div class="h3 fw-bold py-2 mb-1">Descarga de certificados</div>
+      <h6 class="text-muted mb-0">Transacción exitosa</h6>
+    </div>
+
+    <div class="row g-3">
+      <!-- Izquierda: info transacción -->
+      <div class="col-12 col-lg-7">
+  <div class="card shadow-sm h-100">
+    <div class="card-body">
+      <div class="d-flex align-items-start justify-content-between mb-3">
+        <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-receipt fs-4 text-primary"></i>
+          Información de la transacción
+        </h5>
+        <span class="badge text-bg-success d-flex align-items-center gap-1">
+          <i class="bi bi-check2-circle"></i> Exitosa
+        </span>
+      </div>
+
+        <div class="p-3 rounded-3 bg-light border mb-3">
+            <div class="text-muted small">Comprador</div>
+            <div class="fw-semibold fs-5 lh-sm">${info.nombre ?? ''}</div>
+
+            <div class="mt-2 d-flex flex-wrap gap-2">
+            <span class="badge text-bg-secondary">
+                <i class="bi bi-person-vcard me-1"></i>${info.identificacion ?? ''}
+            </span>
+            <span class="badge text-bg-secondary">
+                <i class="bi bi-envelope me-1"></i>${info.email ?? ''}
+            </span>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+            <div class="text-muted small">Liquidación</div>
+            <div class="fw-semibold">${info.idliquidacion ?? ''}</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+            <div class="text-muted small">Recibo</div>
+            <div class="fw-semibold">${info.recibo ?? ''}</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+            <div class="text-muted small">Fecha</div>
+            <div class="fw-semibold">${info.fecha ?? ''}</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+            <div class="text-muted small">Forma de pago</div>
+            <div class="fw-semibold">${info.idformapago ?? ''}</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+            <div class="text-muted small">Número de autorización</div>
+            <div class="fw-semibold">${info.numeroautorizacion ?? ''}</div>
+            </div>
+
+            <!-- Valor neto destacado -->
+            <div class="col-12 col-md-6">
+            <div class="p-3 rounded-3 border bg-white h-100">
+                <div class="text-muted small">Valor neto</div>
+                <div class="fw-bold fs-4">${info.valorneto ?? ''}</div>
+            </div>
+            </div>
+        </div>
+
+        </div>
+        </div>
+    </div>
+      <!-- Derecha: botones descarga -->
+      <div class="col-12 col-lg-5">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Certificados</h5>
+            <div id="zonaBotonesDescarga" class="d-grid gap-2">
+              ${botonesHtml || '<div class="text-muted">No hay certificados para descargar.</div>'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3 d-grid">
+      <button type="button" id="btnVolverBusqueda" class="btn btn-outline-secondary btn-lg">
+        Volver a búsqueda
+      </button>
+    </div>
+  `;
+    clearInterval(timerEstadoPago);
+    win.querySelector('#btnVolverBusqueda')?.addEventListener('click', () => {
+        window.location.reload();
+    });
 }
