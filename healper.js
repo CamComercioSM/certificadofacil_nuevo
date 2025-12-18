@@ -121,6 +121,7 @@ window.actualizarCantidadCertificado = function (index, input) {
     }
 
     calcularTotalCertificados();
+    actualizarFlagCertificados();
 }
 
 window.calcularTotalCertificados = function () {
@@ -238,4 +239,21 @@ window.validarRedireccionCamara = function () {
     }
 
     window.open(enlace, "_blank");
+}
+function actualizarFlagCertificados() {
+  const flag = document.getElementById('flagCertificados');
+  if (!flag) return;
+
+  const inputs = document.querySelectorAll('#selectcertificados input[name="cantidad"]');
+
+  let haySeleccion = false;
+
+  for (const input of inputs) {
+    if (Number(input.value) > 0) {
+      haySeleccion = true;
+      break;
+    }
+  }
+
+  flag.value = haySeleccion ? '1' : '0';
 }

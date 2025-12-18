@@ -376,12 +376,19 @@ async function crearTiposDeCertificadosDisponibles() {
     contenedor.innerHTML = html;
 }
 function comprarCertificados() {
-    const totalCompra = document.getElementById('totalCertificados').textContent;
-    console.log(totalCompra);
     bindOnceClick('btnComprarCertificados', async () => {
         const btn = document.getElementById('btnComprarCertificados');
-        if (!btn || btn.disabled ) return;
+        const flag = document.getElementById('flagCertificados');
 
+        if (!btn || btn.disabled) return;
+        if (!flag || flag.value !== '1') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Atención',
+                text: 'Debes seleccionar al menos un certificado para continuar.'
+            });
+            return;
+        }
         btn.disabled = true;
         try {
             await generarLinkDePago();
@@ -560,4 +567,21 @@ function bindOnceClick(id, handler) {
     if (btn.dataset.bound === '1') return;
     btn.dataset.bound = '1';
     btn.addEventListener('click', handler);
+}
+function actualizarFlagCertificados() {
+    const flag = document.getElementById('flagCertificados');
+    if (!flag) return;
+
+    const inputs = document.querySelectorAll('#selectcertificados input[name="cantidad"]');
+
+    let haySeleccion = false;
+
+    for (const input of inputs) {
+        if (Number(input.value) > 0) {
+            haySeleccion = true;
+            break;
+        }
+    }
+
+    flag.value = haySeleccion ? '1' : '0';
 }
