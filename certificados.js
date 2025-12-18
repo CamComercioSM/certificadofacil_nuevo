@@ -99,7 +99,7 @@ async function cargarInformacionCamarasAndTipoBusqueda() {
         id="tipoBusqueda${index}"
         value="${item.id}"
         onchange="selectTipoBusqueda('${item.id}')">
-      <label class="btn btn-outline-primary" for="tipoBusqueda${index}">
+      <label class="btn btn-outline-secondary" for="tipoBusqueda${index}">
         ${item.nombre}
       </label>
     `;
