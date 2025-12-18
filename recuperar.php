@@ -20,6 +20,7 @@
     <!-- Script Wizard-JS -->
     <script src="https://cdn.jsdelivr.net/gh/AdrianVillamayor/Wizard-JS@2.0.3/dist/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
 </head>
@@ -28,7 +29,7 @@
     <div id="contenido-principal">
         <main class="d-flex justify-content-center py-5">
             <!-- VENTANA CENTRADA -->
-            <div class="appointment-window">
+            <div class="appointment-window-recuperar">
                 <!-- ENCABEZADO -->
                 <div class="text-center mb-4">
                     <img src="https://www.ccsm.org.co/images/logo.png" width="220"
@@ -55,18 +56,42 @@
                                 <label class="form-label">Numero de liquidacion</label>
                                 <input type="text" name="numeroLiquidacion" id="numeroLiquidacion" class="form-control">
                             </div>
+                            <div class="mt-4 d-grid">
+                                <button
+                                    type="button"
+                                    id="btnRecuperarMatricula"
+                                    onclick="recuperarCertificadoConMatricula();"
+                                    class="btn btn-primary btn-lg d-flex align-items-center justify-content-center gap-2">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span class="btn-text">Recuperar Certificado</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- PASO 2 -->
                         <div class="wizard-step" data-wz-title="Con recibo de pago">
                             <div class="mt-3">
                                 <label class="form-label">Recibo de pago</label>
-                                <input type="text" name="numeroLiquidacion" id="numeroLiquidacion" class="form-control">
+                                <input type="text" name="numeroReciboPago" id="numeroReciboPago" class="form-control">
+                            </div>
+                            <div class="mt-4 d-grid">
+                                <button
+                                    type="button"
+                                    id="btnRecuperarRecibo"
+                                    onclick="recuperarCertificadoConReciboDePago();"
+                                    class="btn btn-primary btn-lg d-flex align-items-center justify-content-center gap-2">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span class="btn-text">Recuperar Certificado</span>
+                                </button>
                             </div>
                         </div>
 
                     </aside>
                 </form>
+                <!-- VISTA ÉXITO -->
+                <div id="successView" class="d-none mt-4">
+                    <div id="vistaDescarga"></div>
+                </div>
             </div>
         </main>
     </div>

@@ -21,8 +21,7 @@ const args = {
     "wz_nav_style": "dots",
     "wz_button_style": ".btn .btn-sm .mx-3",
     "wz_ori": "horizontal",
-    "buttons": true,
-    "navigation": "all",
+    "navigation": "nav",
     "finish": "Finalizar",
     "bubble": true,
     "next": "Siguiente",
@@ -46,14 +45,11 @@ function regresarPaso() {
 }
 
 $wz_doc.addEventListener("wz.btn.next", function (e) {
-
     const step = wizard.current_step;
-
     if (step === 1) {
         crearTiposDeCertificadosDisponibles();
     }
     if (step === 2) {
-        generarLinkDePago();
         timerEstadoPago = setInterval(async () => {
             const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFacilTransaID;
             if (!certificadoFaciltransaID) return;
@@ -121,7 +117,7 @@ function buscarEmpresasDisponibles() {
     const btnBuscar = document.getElementById('btnBuscar');
 
     btnBuscar.addEventListener('click', async () => {
-        if (btnBuscar.disabled) return;   // evita re-entradas
+        if (btnBuscar.disabled) return;
         btnBuscar.disabled = true;
 
         try {
@@ -350,21 +346,50 @@ async function crearTiposDeCertificadosDisponibles() {
                 </tbody>
             </table>
         </div>
-
         <div class="mt-3">
             <h6 class="text-uppercase text-muted mb-1" style="font-size:0.8rem;">
                 Resumen de compra
             </h6>
-            <p id="textoResumenCompra" class="mb-1 text-muted small">
+
+            <p id="textoResumenCompra" class="mb-2 text-muted small">
                 No has seleccionado certificados aún.
             </p>
-            <div class="fw-semibold">
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="fw-semibold fs-6">
                 Total: <span id="totalCertificados">${formatearMoneda(0)}</span>
+                </div>
+
+                <button
+                type="button"
+                id="btnComprarCertificados"
+                onclick="comprarCertificados();"
+                class="btn btn-success btn-sm px-3"
+                >
+                <i class="bi bi-cart-check me-1"></i>
+                Comprar
+                </button>
             </div>
         </div>
     `;
     if (flagCert) flagCert.value = '1';
     contenedor.innerHTML = html;
+}
+function comprarCertificados() {
+    const totalCompra = document.getElementById('totalCertificados').textContent;
+    console.log(totalCompra);
+    bindOnceClick('btnComprarCertificados', async () => {
+        const btn = document.getElementById('btnComprarCertificados');
+        if (!btn || btn.disabled ) return;
+
+        btn.disabled = true;
+        try {
+            await generarLinkDePago();
+            avanzarPaso();
+        } finally {
+            btn.disabled = false;
+        }
+    });
 }
 
 async function generarLinkDePago() {
@@ -528,4 +553,11 @@ async function validarEstadoPagoSII() {
             confirmButtonText: 'Aceptar'
         });
     }
+}
+function bindOnceClick(id, handler) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', handler);
 }

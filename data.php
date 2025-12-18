@@ -70,9 +70,6 @@ $respuesta = ['RESPUESTA' => 'ERROR', 'MENSAJE' => 'Operación no válida o no e
 
 switch ($operacion) {
 
-    // =========================================================================
-    // NUEVAS OPERACIONES AÑADIDAS
-    // =========================================================================
     case 'listadoCamaras':
         $respuesta = $Api->ejecutar(
             'tienda-apps',
