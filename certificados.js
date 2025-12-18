@@ -53,7 +53,7 @@ $wz_doc.addEventListener("wz.btn.next", function (e) {
         timerEstadoPago = setInterval(async () => {
             const certificadoFaciltransaID = datosInicioDeTransaccion.certificadoFacilTransaID;
             if (!certificadoFaciltransaID) return;
-            const datos = formulario('consultarEstadoPagoSII', { certificadoFaciltransaID: '267687' });
+            const datos = formulario('consultarEstadoPagoSII', { certificadoFaciltransaID});
             try {
                 const res = await conectarseEndPointSinModal('consultarEstadoPagoSII', datos);
                 if (res?.RESPUESTA && res.RESPUESTA !== 'EXITO') {
@@ -62,7 +62,6 @@ $wz_doc.addEventListener("wz.btn.next", function (e) {
                 const certificados = res.DATOS[0].certificados || [];
                 const informacionDeTransaccion = res.DATOS[0];
                 renderVistaDeDescargarCertificados(certificados, informacionDeTransaccion);
-
             } catch (e) {
                 console.error(e);
             }
